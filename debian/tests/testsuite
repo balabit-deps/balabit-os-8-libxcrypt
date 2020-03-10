@@ -1,0 +1,38 @@
+#!/bin/sh
+
+set -e
+
+WORKDIR=$(mktemp -d)
+trap "rm -rf $WORKDIR" 0 INT QUIT ABRT PIPE TERM
+
+# copy the built tests (not the libtool wrappers)
+cp -a build-deb1/test/.libs/* $WORKDIR
+
+cd $WORKDIR
+ls -l
+errs=
+
+for t in *; do
+  case $t in fcrypt-enosys)
+    echo "========== Skipping test $t =========="
+    continue
+  esac
+
+  echo "========== Running test $t =========="
+  if [ -f ./$t ] && [ -x ./$t ]; then
+    if ./$t; then
+      echo "========== OK $t =========="
+    else
+      echo "========== FAIL $t =========="
+      errs="$errs $t"
+    fi
+  fi
+done
+
+if [ -n "$errs" ]; then
+  echo "Testsuite failed ($errs)"
+  exit 1
+else
+  echo "Testsuite passed"
+  exit 0
+fi
